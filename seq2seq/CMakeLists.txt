@@ -6,7 +6,7 @@ if(NOT WIN32)
     set(CMAKE_CXX_FLAGS "-Wall -std=c++11 -O3 -g")
 endif()
 
-set (EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR/bin})
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
 enable_testing()
 
@@ -43,5 +43,3 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 set(source_direcotory ${PROJECT_SOURCE_DIR}/src)
 add_subdirectory(cnn/cnn)
 add_subdirectory(src)
-
-

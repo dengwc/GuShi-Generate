@@ -4,8 +4,10 @@
 using namespace std;
 using namespace cnn;
 
-const unsigned PoemGenerator::MaxHistoryLen = 3U;
-const unsigned PoemGenerator::PoemSentNum = 4U;
+const size_t PoemGenerator::MaxHistoryLen = 3U;
+const size_t PoemGenerator::PoemSentNum = 4U;
+const string PoemGenerator::EOS_STR = "EOS_STR";
+const string PoemGenerator::UNK_STR = "UNK_STR";
 
 PoemGenerator::PoemGenerator() :
     m(nullptr),
@@ -42,8 +44,7 @@ void PoemGenerator::build_model()
     dec_output_layer = new DenseLayer(m, dec_h_dim , word_dict_size);
 
     words_lookup_param = m->add_lookup_parameters(word_dict_size, { word_embedding_dim });
-    DEC_SOS_param = m->add_parameters({ word_embedding_dim });
-    DEC_EOS_param = m->add_parameters({ word_embedding_dim });
+    DEC_SOS_param = m->add_parameters({ word_embedding_dim }); // SOS will be input , so param is needed
 }
 
 void PoemGenerator::print_model_info()
@@ -65,7 +66,6 @@ Expression PoemGenerator::build_graph(ComputationGraph &cg , const Poem &poem)
     dec_output_layer->new_graph(cg);
     
     Expression DEC_SOS_exp = parameter(cg, DEC_SOS_param);
-    Expression DEC_EOS_exp = parameter(cg, DEC_EOS_param);
     vector<Expression> loss_cont;
     deque<Expression> enc_hidden_layer_output_cont ;
     for (size_t generating_idx = 1; generating_idx < poem.size(); ++generating_idx)
@@ -93,7 +93,8 @@ Expression PoemGenerator::build_graph(ComputationGraph &cg , const Poem &poem)
         enc_hidden_layer_output_cont.push_front(enc_hidden_layer_output_exp);
         
         // enc output layer
-        enc_hidden_layer_output_cont.resize(min(MaxHistoryLen, enc_hidden_layer_output_cont.size())); // truncate the first MaxHistoyrLen
+        size_t cur_history_size = enc_hidden_layer_output_cont.size() ;
+        enc_hidden_layer_output_cont.resize( std::min( MaxHistoryLen, cur_history_size) ); // truncate the first MaxHistoyrLen
         Expression enc_output_layer_output_exp = enc_output_layer->build_graph(vector<Expression>(
             enc_hidden_layer_output_cont.begin(), enc_hidden_layer_output_cont.end()));
 
@@ -121,10 +122,12 @@ Expression PoemGenerator::build_graph(ComputationGraph &cg , const Poem &poem)
         }
             // processing EOS
             // here pre_word_exp is the last word exp
+        /* MAY BE LEAD to EOS prediction 
         Expression dec_out_exp = dec->add_input(pre_word_exp);
         Expression dec_output_layer_output_exp = dec_output_layer->build_graph(dec_out_exp);
         Expression loss = pickneglogsoftmax(dec_output_layer_output_exp, EOS_idx);
         loss_cont.push_back(loss);
+        */
     }
     return sum(loss_cont);
 }
@@ -140,7 +143,6 @@ void PoemGenerator::generate(cnn::ComputationGraph &cg, const IndexSeq &first_se
     dec_output_layer->new_graph(cg);
 
     Expression DEC_SOS_exp = parameter(cg, DEC_SOS_param);
-    Expression DEC_EOS_exp = parameter(cg, DEC_EOS_param);
     deque<Expression> history_outputs;
     vector<IndexSeq> tmp_poem(PoemSentNum, IndexSeq(poem_sent_len));
     copy(first_seq.cbegin(), first_seq.cend(), tmp_poem[0].begin());
@@ -168,7 +170,8 @@ void PoemGenerator::generate(cnn::ComputationGraph &cg, const IndexSeq &first_se
         
         // encoder output layer
         history_outputs.push_front(enc_hidden_layer_output);
-        history_outputs.resize(min(MaxHistoryLen, history_outputs.size()));
+        size_t cur_history_size = history_outputs.size() ;
+        history_outputs.resize(std::min(MaxHistoryLen, cur_history_size));
         Expression enc_output_layer_output = enc_output_layer->build_graph(vector<Expression>(history_outputs.begin(), history_outputs.end()));
 
         // decoder
@@ -186,7 +189,7 @@ void PoemGenerator::generate(cnn::ComputationGraph &cg, const IndexSeq &first_se
         for (size_t gen_idx = 0; gen_idx < poem_sent_len; ++gen_idx)
         {
             Expression dec_out_exp = dec->add_input(pre_word_exp);
-            Expression dec_output_layer_output_exp = dec_output_layer->build_graph(dec_out_exp);
+            dec_output_layer->build_graph(dec_out_exp); 
             vector<cnn::real> dist = as_vector(cg.incremental_forward());
             Index predicted_word_idx = distance(dist.cbegin(), max_element(dist.cbegin(), dist.cend()));
             gen_seq[gen_idx] = predicted_word_idx;

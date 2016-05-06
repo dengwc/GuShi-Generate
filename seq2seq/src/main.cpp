@@ -1,7 +1,9 @@
-#include "poem_generate.h"
-#include "poem_generate_handler.h"
 #include <boost/program_options.hpp>
 #include <boost/log/trivial.hpp>
+
+#include "poem_generate.h"
+#include "poem_generate_handler.h"
+
 using namespace std;
 namespace po = boost::program_options;
 const string PROGRAM_DESCRIPTION = "Chinese Poem Generator based on CNN Library";
@@ -112,7 +114,7 @@ int generate_process(int argc, char *argv[], const string &program_name)
     string first_seq , model_path;
     if (0 == var_map.count("first_seq"))
     {
-        BOOST_LOG_TRIVIAL(fatal) << "raw_data path should be specified .\n"
+        BOOST_LOG_TRIVIAL(fatal) << "first sequence should be given .\n"
             "Exit!";
         return -1;
     }

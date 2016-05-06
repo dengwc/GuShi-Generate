@@ -20,7 +20,7 @@ struct PoemGeneratorHandler
 
     void build_model();
 
-    void train(const std::vector<Poem> &poems , size_t max_epoch);
+    void train(const std::vector<Poem> &poems , size_t max_epoch , size_t report_freq=1000);
     void generate(const std::string &first_seq, std::vector<std::string> &generated_poem);
 
     void save_model(std::ofstream &os);

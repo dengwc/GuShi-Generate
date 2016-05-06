@@ -49,7 +49,7 @@ void PoemGeneratorHandler::read_train_data(ifstream &is, vector<Poem> &poems)
 void PoemGeneratorHandler::finish_reading_training_data()
 {
     assert(!pg.word_dict.is_frozen());
-    pg.EOS_idx = pg.word_dict.Convert("EOS_OUTPUT");
+    pg.word_dict.Convert("EOS_OUTPUT");
     pg.word_dict.Freeze();
     pg.word_dict.SetUnk("UNK_STR");
     pg.word_dict_size = pg.word_dict.size();
@@ -68,9 +68,9 @@ void PoemGeneratorHandler::finish_reading_training_data()
 void PoemGeneratorHandler::finish_reading_training_data(boost::program_options::variables_map &var_map)
 {
     assert(!pg.word_dict.is_frozen());
-    pg.EOS_idx = pg.word_dict.Convert("EOS_OUTPUT");
+    pg.word_dict.Convert(pg.EOS_STR);
     pg.word_dict.Freeze();
-    pg.word_dict.SetUnk("UNK_STR");
+    pg.word_dict.SetUnk(pg.UNK_STR);
     pg.word_dict_size = pg.word_dict.size();
 
     pg.word_embedding_dim = var_map["word_embedding_dim"].as<unsigned>();
@@ -86,17 +86,19 @@ void PoemGeneratorHandler::finish_reading_training_data(boost::program_options::
 
 void PoemGeneratorHandler::build_model()
 {
+    pg.EOS_idx = pg.word_dict.Convert(pg.EOS_STR) ;
     pg.build_model();
     pg.print_model_info();
 }
 
-void PoemGeneratorHandler::train(const std::vector<Poem> &poems , size_t max_epoch)
+void PoemGeneratorHandler::train(const std::vector<Poem> &poems , size_t max_epoch , size_t report_freq)
 {
     size_t poems_size = poems.size();
     BOOST_LOG_TRIVIAL(info) << "train at " << poems_size << " poems" ;
     vector<size_t> access_order(poems_size);
     for (size_t idx = 0; idx < poems_size; ++idx) access_order[idx] = idx;
     SimpleSGDTrainer sgd(pg.m);
+    size_t training_cnt = 0 ;
     for (size_t nr_epoch = 0; nr_epoch < max_epoch; ++nr_epoch)
     {
         BOOST_LOG_TRIVIAL(info) << "--------- " << nr_epoch + 1 << "/" << max_epoch << " ---------";
@@ -112,6 +114,12 @@ void PoemGeneratorHandler::train(const std::vector<Poem> &poems , size_t max_epo
             stat.loss += as_scalar(cg.forward());
             cg.backward();
             sgd.update(1.f);
+            ++training_cnt ;
+            if(0 == training_cnt % report_freq) 
+            {
+                BOOST_LOG_TRIVIAL(trace) << training_cnt << "has been trained since last report. " ;
+                training_cnt = 0 ; // avoid overflow
+            }
         }
         sgd.update_epoch();
         stat.end_time_stat();
@@ -119,7 +127,7 @@ void PoemGeneratorHandler::train(const std::vector<Poem> &poems , size_t max_epo
             << "Time cost " << stat.get_time_cost_in_seconds() << " s\n"
             << "sum E = " << stat.get_sum_E();
     }
-
+    BOOST_LOG_TRIVIAL(info) << "training done ." ;
 }
 
 void PoemGeneratorHandler::generate(const string &first_seq, vector<string> &generated_poem)
@@ -153,6 +161,7 @@ void PoemGeneratorHandler::generate(const string &first_seq, vector<string> &gen
 
 void PoemGeneratorHandler::save_model(std::ofstream &os)
 {
+    BOOST_LOG_TRIVIAL(info) << "saving model ..." ;
     boost::archive::text_oarchive to(os);
     to << pg.word_embedding_dim << pg.word_dict_size
         << pg.enc_h_dim << pg.enc_stacked_layer_num
@@ -160,11 +169,13 @@ void PoemGeneratorHandler::save_model(std::ofstream &os)
         << pg.enc_output_layer_output_dim
         << pg.dec_h_dim << pg.dec_stacked_layer_num;
     to << pg.word_dict;
-    to << pg.m;
+    to << (*pg.m);
+    BOOST_LOG_TRIVIAL(info) << "saved ." ;
 }
 
 void PoemGeneratorHandler::load_model(std::ifstream &is)
 {
+    BOOST_LOG_TRIVIAL(info) << "loading model ..." ;
     boost::archive::text_iarchive ti(is);
     ti >> pg.word_embedding_dim >> pg.word_dict_size
         >> pg.enc_h_dim >> pg.enc_stacked_layer_num
@@ -172,9 +183,10 @@ void PoemGeneratorHandler::load_model(std::ifstream &is)
         >> pg.enc_output_layer_output_dim
         >> pg.dec_h_dim >> pg.dec_stacked_layer_num;
     ti >> pg.word_dict;
-    assert(pg.word_dict.size() == pg.word_dict_size);
-    pg.build_model();
-    ti >> pg.m;
+    assert(pg.word_dict.size() == pg.word_dict_size); 
+    build_model();
+    ti >> (*pg.m);
+    BOOST_LOG_TRIVIAL(info) << "loaded ." ;
 }
 
 void PoemGeneratorHandler::slice_utf8_sents2single_words(const std::string &usent, std::vector<string> &words_cont)

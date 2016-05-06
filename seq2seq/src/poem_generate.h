@@ -43,13 +43,15 @@ struct PoemGenerator
 
     cnn::LookupParameters *words_lookup_param;
     cnn::Parameters *DEC_SOS_param;
-    cnn::Parameters *DEC_EOS_param;
     Index EOS_idx; // in word dict index ; we may want to decode an EOS at every end poem sentence ;
    
     cnn::Dict word_dict;
 
-    const static unsigned MaxHistoryLen ; //  = 3 
-    const static unsigned PoemSentNum;
+    // static 
+    const static std::size_t MaxHistoryLen ; //  = 3 
+    const static std::size_t PoemSentNum;
+    const static std::string EOS_STR ; 
+    const static std::string UNK_STR ;
 
     PoemGenerator();
     ~PoemGenerator();
