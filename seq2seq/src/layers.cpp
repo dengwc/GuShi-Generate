@@ -3,20 +3,6 @@
 using namespace cnn;
 using namespace std;
 
-// Bi-LSTM
-
-BILSTMLayer::BILSTMLayer(Model *m , unsigned nr_lstm_stacked_layers, unsigned lstm_x_dim, unsigned lstm_h_dim)
-    : l2r_builder(new LSTMBuilder(nr_lstm_stacked_layers , lstm_x_dim , lstm_h_dim , m)) ,
-    r2l_builder(new LSTMBuilder(nr_lstm_stacked_layers , lstm_x_dim , lstm_h_dim , m)) ,
-    SOS(m->add_parameters({lstm_x_dim})) ,
-    EOS(m->add_parameters({lstm_x_dim}))
-{}
-
-BILSTMLayer::~BILSTMLayer()
-{ 
-    if (l2r_builder) delete l2r_builder;
-    if (r2l_builder) delete r2l_builder;
-}
 
 // DenseLayer
 

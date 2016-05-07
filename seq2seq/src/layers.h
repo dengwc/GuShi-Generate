@@ -11,18 +11,18 @@
 #include "cnn/dict.h"
 #include "cnn/expr.h"
 
-
-struct BILSTMLayer
+template <typename RNNType>
+struct BIRNNLayer
 {
-    cnn::LSTMBuilder *l2r_builder;
-    cnn::LSTMBuilder *r2l_builder;
+    RNNType *l2r_builder;
+    RNNType *r2l_builder;
     cnn::Parameters *SOS;
     cnn::Parameters *EOS;
     cnn::expr::Expression SOS_EXP;
     cnn::expr::Expression EOS_EXP;
 
-    BILSTMLayer(cnn::Model *model , unsigned nr_lstm_stack_layers, unsigned lstm_x_dim, unsigned lstm_h_dim);
-    ~BILSTMLayer();
+    BIRNNLayer(cnn::Model *model , unsigned nr_lstm_stack_layers, unsigned lstm_x_dim, unsigned lstm_h_dim);
+    ~BIRNNLayer();
     void new_graph(cnn::ComputationGraph &cg);
     void start_new_sequence();
     void build_graph(const std::vector<cnn::expr::Expression> &X_seq , std::vector<cnn::expr::Expression> &l2r_outputs , 
@@ -83,9 +83,23 @@ struct MergeMax3Layer : Merge3Layer
 
 
 // ------------------- inline function definition --------------------
+template <typename RNNType>
+BIRNNLayer<RNNType>::BIRNNLayer(cnn::Model *m , unsigned nr_lstm_stacked_layers, unsigned lstm_x_dim, unsigned lstm_h_dim)
+    : l2r_builder(new RNNType(nr_lstm_stacked_layers , lstm_x_dim , lstm_h_dim , m)) ,
+    r2l_builder(new RNNType(nr_lstm_stacked_layers , lstm_x_dim , lstm_h_dim , m)) ,
+    SOS(m->add_parameters({lstm_x_dim})) ,
+    EOS(m->add_parameters({lstm_x_dim}))
+{}
 
+template <typename RNNType>
+BIRNNLayer<RNNType>::~BIRNNLayer()
+{ 
+    if (l2r_builder) delete l2r_builder;
+    if (r2l_builder) delete r2l_builder;
+}
+template <typename RNNType>
 inline
-void BILSTMLayer::new_graph(cnn::ComputationGraph &cg)
+void BIRNNLayer<RNNType>::new_graph(cnn::ComputationGraph &cg)
 {
     l2r_builder->new_graph(cg);
     r2l_builder->new_graph(cg);
@@ -93,15 +107,17 @@ void BILSTMLayer::new_graph(cnn::ComputationGraph &cg)
     EOS_EXP = parameter(cg, EOS);
 }
 
+template <typename RNNType>
 inline
-void BILSTMLayer::start_new_sequence()
+void BIRNNLayer<RNNType>::start_new_sequence()
 {
     l2r_builder->start_new_sequence();
     r2l_builder->start_new_sequence();
 }
 
+template <typename RNNType>
 inline
-void BILSTMLayer::build_graph(const std::vector<cnn::expr::Expression> &X_seq, std::vector<cnn::expr::Expression> &l2r_outputs,
+void BIRNNLayer<RNNType>::build_graph(const std::vector<cnn::expr::Expression> &X_seq, std::vector<cnn::expr::Expression> &l2r_outputs,
     std::vector<cnn::expr::Expression> &r2l_outputs)
 {
     size_t seq_len = X_seq.size();
@@ -118,8 +134,10 @@ void BILSTMLayer::build_graph(const std::vector<cnn::expr::Expression> &X_seq, s
     swap(l2r_outputs, tmp_l2r_outputs);
     swap(r2l_outputs, tmp_r2l_outputs);
 }
+
+template <typename RNNType>
 inline
-void BILSTMLayer::build_graph(const std::vector<cnn::expr::Expression> &X_seq)
+void BIRNNLayer<RNNType>::build_graph(const std::vector<cnn::expr::Expression> &X_seq)
 {
     size_t seq_len = X_seq.size();
     l2r_builder->add_input(SOS_EXP);
@@ -132,8 +150,9 @@ void BILSTMLayer::build_graph(const std::vector<cnn::expr::Expression> &X_seq)
     }
 }
 
+template <typename RNNType>
 inline 
-void BILSTMLayer::get_final_h(std::vector<cnn::expr::Expression> &out_final_h)
+void BIRNNLayer<RNNType>::get_final_h(std::vector<cnn::expr::Expression> &out_final_h)
 {
     std::vector<cnn::expr::Expression> tmp_out_final_h(l2r_builder->final_h());
     for (cnn::expr::Expression &r2l_layer_h : r2l_builder->final_h()) tmp_out_final_h.push_back(r2l_layer_h);

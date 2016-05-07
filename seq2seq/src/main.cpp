@@ -1,6 +1,6 @@
 #include <boost/program_options.hpp>
 #include <boost/log/trivial.hpp>
-
+#include "cnn/lstm.h"
 #include "poem_generate.h"
 #include "poem_generate_handler.h"
 
@@ -47,8 +47,8 @@ int train_process(int argc, char *argv[], const string &program_name)
 
     // Init 
     cnn::Initialize(argc, argv, 1234); // 
-    PoemGenerator pg;
-    PoemGeneratorHandler pgh(pg);
+    PoemGenerator<cnn::SimpleRNNBuilder> pg;
+    PoemGeneratorHandler<cnn::SimpleRNNBuilder> pgh(pg);
 
     ifstream train_is(training_data_path);
     if (!train_is) {
@@ -130,8 +130,8 @@ int generate_process(int argc, char *argv[], const string &program_name)
 
     // Init 
     cnn::Initialize(argc, argv, 1234);
-    PoemGenerator pg;
-    PoemGeneratorHandler pgh(pg);
+    PoemGenerator<cnn::SimpleRNNBuilder> pg;
+    PoemGeneratorHandler<cnn::SimpleRNNBuilder> pgh(pg);
 
 
 
