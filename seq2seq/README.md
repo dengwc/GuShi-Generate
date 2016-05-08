@@ -49,10 +49,10 @@ CNN库不支持GPU，在层数较多、节点数量多时也是比较慢的。
     # example , using `./path/to/server -h` to see parameters infomation
     ../bin/server -p 6669 -m ../run/model.0506.rnn.160-1-2.model --cnn-mem 256
     ```
-3.发送请求
+3. 发送请求
 
     接受REST请求——仅支持POST方，需要提供字段：`first_seq` , 值为古诗的第一句，必须UTF8编码，字与字之间可有空格(未测试)，可没有
-
+    
     使用`curl`的示例：
     
     ```shell
