@@ -13,6 +13,7 @@
 #include <fstream>
 #include <sstream>
 #include <deque>
+#include <set>
 #include <boost/log/trivial.hpp>
 
 #include "layers.h"
@@ -213,6 +214,7 @@ void PoemGenerator<RNNType>::generate(cnn::ComputationGraph &cg, const IndexSeq 
     std::deque<cnn::expr::Expression> history_outputs;
     std::vector<IndexSeq> tmp_poem(PoemSentNum, IndexSeq(poem_sent_len));
     std::copy(first_seq.cbegin(), first_seq.cend(), tmp_poem[0].begin());
+    std::set<Index> has_generated_set ;
     for (unsigned generating_idx = 1; generating_idx < PoemSentNum; ++generating_idx)
     {
         IndexSeq &cur_seq = tmp_poem.at(generating_idx - 1),
@@ -258,7 +260,21 @@ void PoemGenerator<RNNType>::generate(cnn::ComputationGraph &cg, const IndexSeq 
             cnn::expr::Expression dec_out_exp = dec->add_input(pre_word_exp);
             dec_output_layer->build_graph(dec_out_exp); 
             std::vector<cnn::real> dist = as_vector(cg.incremental_forward());
-            Index predicted_word_idx = distance(dist.cbegin(), max_element(dist.cbegin(), dist.cend()));
+            //Index predicted_word_idx = distance(dist.cbegin(), max_element(dist.cbegin(), dist.cend()));
+            // just get the Highest score will cause to repeat ! 
+            // we'll add the rule that the next words will never occures in the previous
+            Index predicted_word_idx = -1 ;
+            cnn::real max_score_conditioned = -1. ; // scores are all negative
+            for(std::size_t idx = 0 ; idx < dist.size() ; ++idx)
+            {
+                if(dist.at(idx) > max_score_conditioned && has_generated_set.find(idx) == has_generated_set.end())
+                {
+                    predicted_word_idx = idx ;
+                    max_score_conditioned = dist.at(idx) ;
+                }
+            } 
+            assert(predicted_word_idx != -1) ;
+            has_generated_set.insert(predicted_word_idx) ;
             gen_seq[gen_idx] = predicted_word_idx;
             pre_word_exp = lookup(cg, words_lookup_param, predicted_word_idx);
         }
