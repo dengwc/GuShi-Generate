@@ -18,9 +18,9 @@
 template <typename RNNType>
 struct PoemGeneratorHandler
 {
-    PoemGenerator<RNNType> &pg;
+    PoemGenerator<RNNType> pg;
     std::mt19937 rng;
-    PoemGeneratorHandler(PoemGenerator<RNNType> &pg , size_t seed=1314);
+    PoemGeneratorHandler(size_t seed=1314);
     ~PoemGeneratorHandler();
 
     void read_train_data(std::ifstream &is , std::vector<Poem> &poems);
@@ -44,8 +44,8 @@ struct PoemGeneratorHandler
 // ---------------- Template Class Implementation -----------------
 
 template <typename RNNType>
-PoemGeneratorHandler<RNNType>::PoemGeneratorHandler(PoemGenerator<RNNType> &pg , std::size_t seed)
-    :pg(pg) , rng(seed)
+PoemGeneratorHandler<RNNType>::PoemGeneratorHandler(std::size_t seed)
+    :pg(PoemGenerator<RNNType>()) , rng(seed)
 {}
 
 template <typename RNNType>

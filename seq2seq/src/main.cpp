@@ -1,7 +1,6 @@
 #include <boost/program_options.hpp>
 #include <boost/log/trivial.hpp>
 #include "cnn/lstm.h"
-#include "poem_generate.h"
 #include "poem_generate_handler.h"
 
 using namespace std;
@@ -47,8 +46,7 @@ int train_process(int argc, char *argv[], const string &program_name)
 
     // Init 
     cnn::Initialize(argc, argv, 1234); // 
-    PoemGenerator<cnn::SimpleRNNBuilder> pg;
-    PoemGeneratorHandler<cnn::SimpleRNNBuilder> pgh(pg);
+    PoemGeneratorHandler<cnn::SimpleRNNBuilder> pgh;
 
     ifstream train_is(training_data_path);
     if (!train_is) {
@@ -75,8 +73,8 @@ int train_process(int argc, char *argv[], const string &program_name)
     {
         cerr << "no model name specified . using default .\n";
         ostringstream oss;
-        oss << "poemgen_" << pg.word_embedding_dim << "_" << pg.enc_h_dim
-            << "_" << pg.dec_h_dim << ".model";
+        oss << "poemgen_" << pgh.pg.word_embedding_dim << "_" << pgh.pg.enc_h_dim
+            << "_" << pgh.pg.dec_h_dim << ".model";
         model_path = oss.str();
     }
     else model_path = var_map["model"].as<string>();
@@ -130,11 +128,8 @@ int generate_process(int argc, char *argv[], const string &program_name)
 
     // Init 
     cnn::Initialize(argc, argv, 1234);
-    PoemGenerator<cnn::SimpleRNNBuilder> pg;
-    PoemGeneratorHandler<cnn::SimpleRNNBuilder> pgh(pg);
-
-
-
+    PoemGeneratorHandler<cnn::SimpleRNNBuilder> pgh ;
+    
     // load model 
     ifstream is(model_path);
     if (!is)
