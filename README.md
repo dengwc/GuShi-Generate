@@ -9,6 +9,8 @@ Seq2Seq生成古诗
 
 @rw1993 数据支持
 
-# 数据格式
+# 说明
 
-[数据需求文件](Data Form.md)
+* 古诗生成：五言绝句
+* 首句生成需要[SRILM](http://www.speech.sri.com/projects/srilm/)支持
+* 首句中语言模型等目录需在[firstSen.py](firstSen.py)中更改
