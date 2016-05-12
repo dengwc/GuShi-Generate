@@ -1,0 +1,3 @@
+[submodule "seq2seq/cnn"]
+	path = seq2seq/cnn
+	url = https://github.com/Oneplus/cnn.git
