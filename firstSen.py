@@ -6,7 +6,7 @@ import random
 
 SENSIZE = 5
 LISTSIZE = 20
-TOPICFILE = './Shixuehanying.txt.jian'
+TOPICFILE = './data/Shixuehanying.txt.jian'
 SRILMDIR = '../srilm/bin/i686-m64/ngram'
 LMDIR = './lm/gushi.lm'
 
